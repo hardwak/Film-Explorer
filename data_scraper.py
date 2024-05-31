@@ -5,10 +5,12 @@ import shutil
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import re
+from datetime import timedelta
 
 
 def get_film_data():
-    if not os.path.exists("full_film_data.csv"):
+    if not os.path.exists("data_scraper/full_film_data.csv"):
         ratings = get_film_ratings()
         wiki_films = get_wiki_films()
 
@@ -24,16 +26,17 @@ def get_film_data():
 
         films_data['weighted_rating'] = films_data['averageRating'] * films_data['numVotes']
 
-        films_data_avg_rate = films_data.groupby(['Release date', 'Title', 'Genre', 'Runtime', 'Language', 'Type']).agg({
-            'Release date': 'first',
-            'Title': 'first',
-            'Genre': 'first',
-            'Runtime': 'first',
-            'Language': 'first',
-            'Type': 'first',
-            'numVotes': 'sum',
-            'weighted_rating': 'sum'
-        })
+        films_data_avg_rate = films_data.groupby(['Release date', 'Title', 'Genre', 'Runtime', 'Language', 'Type']).agg(
+            {
+                'Release date': 'first',
+                'Title': 'first',
+                'Genre': 'first',
+                'Runtime': 'first',
+                'Language': 'first',
+                'Type': 'first',
+                'numVotes': 'sum',
+                'weighted_rating': 'sum'
+            })
 
         print(films_data_avg_rate.info())
         films_data_avg_rate['Rating'] = films_data_avg_rate['weighted_rating'] / films_data_avg_rate['numVotes']
@@ -41,16 +44,34 @@ def get_film_data():
         films_data_avg_rate.drop(columns=['numVotes', 'weighted_rating'], inplace=True)
         films_data_avg_rate['Rating'] = films_data_avg_rate['Rating'].round(decimals=1)
 
-        films_data_avg_rate.to_csv('full_film_data.csv', index=False)
+        films_data_avg_rate['Runtime'] = films_data_avg_rate['Runtime'].apply(convert_runtime)
+
+        films_data_avg_rate.to_csv('data_scraper/full_film_data.csv', index=False)
 
         return films_data_avg_rate
     else:
         print("Reading films data...")
-        return pd.read_csv('full_film_data.csv')
+        film_data = pd.read_csv('data_scraper/full_film_data.csv')
+        film_data['Release date'] = pd.to_datetime(film_data['Release date'], format='%Y-%m-%d')
+        film_data['Runtime'] = film_data['Runtime'].apply(convert_runtime)
+        return film_data
+
+
+def convert_runtime(runtime_str: str):
+    pattern = r"(?:(\d+)\s*h)?\s*(?:(\d+)\s*min)?"
+    match = re.match(pattern, runtime_str.strip())
+
+    if match:
+        hours = int(match.group(1)) if match.group(1) else 0
+        minutes = int(match.group(2)) if match.group(2) else 0
+
+        return timedelta(hours=hours, minutes=minutes)
+    else:
+        raise ValueError(f"Time format is incorrect: {runtime_str}")
 
 
 def get_film_ratings():
-    if not os.path.exists('title.basics.tsv'):
+    if not os.path.exists('data_scraper/title.basics.tsv'):
         print('Downloading and unpacking title.basics.tsv...')
 
         response = requests.get('https://datasets.imdbws.com/title.basics.tsv.gz', stream=True)
@@ -59,12 +80,12 @@ def get_film_ratings():
         del response
 
         with gzip.open('title.basics.tsv.gz', 'rb') as f_in:
-            with open('title.basics.tsv', 'wb') as f_out:
+            with open('data_scraper/title.basics.tsv', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
         os.remove('title.basics.tsv.gz')
 
-    if not os.path.exists('title.ratings.tsv'):
+    if not os.path.exists('data_scraper/title.ratings.tsv'):
         print('Downloading and unpacking title.ratings.tsv...')
 
         response = requests.get('https://datasets.imdbws.com/title.ratings.tsv.gz', stream=True)
@@ -73,27 +94,27 @@ def get_film_ratings():
         del response
 
         with gzip.open('title.ratings.tsv.gz', 'rb') as f_in:
-            with open('title.ratings.tsv', 'wb') as f_out:
+            with open('data_scraper/title.ratings.tsv', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
         os.remove('title.ratings.tsv.gz')
 
-    if not os.path.exists('films_ratings.csv'):
+    if not os.path.exists('data_scraper/films_ratings.csv'):
         print('Merging IMDB data...')
-        titles = pd.read_csv('title.basics.tsv', sep='\t')
-        ratings = pd.read_csv('title.ratings.tsv', sep='\t')
+        titles = pd.read_csv('data_scraper/title.basics.tsv', sep='\t')
+        ratings = pd.read_csv('data_scraper/title.ratings.tsv', sep='\t')
 
         films_ratings = pd.merge(titles, ratings, how='inner')
-        films_ratings.to_csv('films_ratings.csv', index=False)
+        films_ratings.to_csv('data_scraper/films_ratings.csv', index=False)
 
         return films_ratings
     else:
         print('Loading IMDB data...')
-        return pd.read_csv('films_ratings.csv')
+        return pd.read_csv('data_scraper/films_ratings.csv')
 
 
 def get_wiki_films():
-    if not os.path.exists('netflix_wiki.csv'):
+    if not os.path.exists('data_scraper/netflix_wiki.csv'):
         print('Scraping Wikipedia...')
 
         urls = ["https://en.wikipedia.org/wiki/List_of_Netflix_original_films_(2015–2017)",
@@ -125,15 +146,10 @@ def get_wiki_films():
 
         netflix_wiki['Release date'] = pd.to_datetime(netflix_wiki['Release date'], format='%B %d, %Y')
 
-        netflix_wiki.to_csv("netflix_wiki.csv", index=False)
+        netflix_wiki.to_csv("data_scraper/netflix_wiki.csv", index=False)
     else:
         print("Loading wikipedia data...")
-        netflix_wiki = pd.read_csv("netflix_wiki.csv")
+        netflix_wiki = pd.read_csv("data_scraper/netflix_wiki.csv")
         netflix_wiki['Release date'] = pd.to_datetime(netflix_wiki['Release date'], format='%Y-%m-%d')
 
     return netflix_wiki
-
-
-if __name__ == "__main__":
-    films = get_film_data()
-    print(films.info())
