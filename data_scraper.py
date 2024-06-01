@@ -44,9 +44,12 @@ def get_film_data():
         films_data_avg_rate.drop(columns=['numVotes', 'weighted_rating'], inplace=True)
         films_data_avg_rate['Rating'] = films_data_avg_rate['Rating'].round(decimals=1)
 
-        films_data_avg_rate['Runtime'] = films_data_avg_rate['Runtime'].apply(convert_runtime)
+        films_data_avg_rate.reset_index(drop=True, inplace=True)
+        films_data_avg_rate['Original Index'] = films_data_avg_rate.index
 
         films_data_avg_rate.to_csv('resources/data_scraper/full_film_data.csv', index=False)
+
+        films_data_avg_rate['Runtime'] = films_data_avg_rate['Runtime'].apply(convert_runtime)
 
         return films_data_avg_rate
     else:

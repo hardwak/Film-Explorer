@@ -29,6 +29,9 @@ class FilmList:
         search_results = self.film_data[self.film_data['Title'].str.contains(film_name)]
         return search_results
 
+    def get_by_film_index(self, film_index: int):
+        return self.film_data[self.film_data['Original Index'] == film_index]
+
     def sort_by(self, column: str, ascending=True):
         valid_columns = self.film_data.columns.tolist()
         if column not in valid_columns:
@@ -93,15 +96,7 @@ if __name__ == '__main__':
     pd.set_option('display.width', None)
     pd.set_option('display.max_colwidth', None)
     film_list = FilmList()
-    print(film_list.get_formatted_film_data(
-        film_list.filter_by(date_from=datetime(2020, 1, 1),
-                            date_to=datetime(2022, 12, 31),
-                            runtime_from=timedelta(hours=0, minutes=2),
-                            runtime_to=timedelta(hours=1, minutes=2),
-                            genre='Documentary',
-                            language='English',
-                            film_type='Documentaries',
-                            rating_from=6.5,
-                            rating_to=7.9
-                            )))
     print(film_list.film_data.info())
+    filtered = film_list.filter_by(date_from=datetime(2020, 1, 1))
+    print(film_list.get_formatted_film_data())
+
