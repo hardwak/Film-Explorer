@@ -15,6 +15,16 @@ class FilmList:
     def __iter__(self):
         return iter(self.film_data)
 
+    def get_formatted_film_data(self, film_data=None):
+        if film_data is None:
+            film_data = self.film_data
+
+        film_data['Release date'] = film_data['Release date'].apply(lambda date: date.strftime('%Y-%m-%d'))
+        film_data['Runtime'] = film_data['Runtime'].apply(
+            lambda td: f'{td.seconds // 3600} h {td.seconds // 60 % 60} min')
+
+        return film_data
+
     def search_film(self, film_name: str):
         search_results = self.film_data[self.film_data['Title'].str.contains(film_name)]
         return search_results
@@ -74,8 +84,6 @@ class FilmList:
         if rating_to <= 10.0:
             films = films[films['Rating'] <= rating_to]
 
-        films['Runtime'] = films['Runtime'].apply(lambda td: f'{td.seconds // 3600} h {td.seconds // 60 % 60} min')
-
         return films
 
 
@@ -85,14 +93,15 @@ if __name__ == '__main__':
     pd.set_option('display.width', None)
     pd.set_option('display.max_colwidth', None)
     film_list = FilmList()
-    print(film_list.filter_by(date_from=datetime(2020, 1, 1),
-                              date_to=datetime(2022, 12, 31),
-                              runtime_from=timedelta(hours=0, minutes=2),
-                              runtime_to=timedelta(hours=1, minutes=2),
-                              genre='Documentary',
-                              language='English',
-                              film_type='Documentaries',
-                              rating_from=6.5,
-                              rating_to=7.9
-                              ))
+    print(film_list.get_formatted_film_data(
+        film_list.filter_by(date_from=datetime(2020, 1, 1),
+                            date_to=datetime(2022, 12, 31),
+                            runtime_from=timedelta(hours=0, minutes=2),
+                            runtime_to=timedelta(hours=1, minutes=2),
+                            genre='Documentary',
+                            language='English',
+                            film_type='Documentaries',
+                            rating_from=6.5,
+                            rating_to=7.9
+                            )))
     print(film_list.film_data.info())
