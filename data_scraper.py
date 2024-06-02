@@ -47,28 +47,34 @@ def get_film_data():
         films_data_avg_rate.reset_index(drop=True, inplace=True)
         films_data_avg_rate['Original Index'] = films_data_avg_rate.index
 
-        films_data_avg_rate.to_csv('resources/data_scraper/full_film_data.csv', index=False)
-
         films_data_avg_rate['Runtime'] = films_data_avg_rate['Runtime'].apply(convert_runtime)
+
+        films_data_avg_rate.to_csv('resources/data_scraper/full_film_data.csv', index=False)
 
         return films_data_avg_rate
     else:
         print("Reading films data...")
         film_data = pd.read_csv('resources/data_scraper/full_film_data.csv')
         film_data['Release date'] = pd.to_datetime(film_data['Release date'], format='%Y-%m-%d')
-        film_data['Runtime'] = film_data['Runtime'].apply(convert_runtime)
+        film_data['Runtime'] = film_data['Runtime'].apply(lambda time: timedelta(hours=int(time[-8:-6]), minutes=int(time[-5:-3])))
         return film_data
 
 
 def convert_runtime(runtime_str: str):
-    pattern = r"(?:(\d+)\s*h)?\s*(?:(\d+)\s*min)?"
+    pattern = r"^(?:0 days\s+)?(\d+):(\d+):(\d+)$|^(?:(\d+)\s*h\s*)?(?:(\d+)\s*min)?$"
     match = re.match(pattern, runtime_str.strip())
 
     if match:
-        hours = int(match.group(1)) if match.group(1) else 0
-        minutes = int(match.group(2)) if match.group(2) else 0
+        if match.group(1):
+            hours = int(match.group(1))
+            minutes = int(match.group(2))
+            seconds = int(match.group(3))
+        else:
+            hours = int(match.group(4)) if match.group(4) else 0
+            minutes = int(match.group(5)) if match.group(5) else 0
+            seconds = 0
 
-        return timedelta(hours=hours, minutes=minutes)
+        return timedelta(hours=hours, minutes=minutes, seconds=seconds)
     else:
         raise ValueError(f"Time format is incorrect: {runtime_str}")
 
