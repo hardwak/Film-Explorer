@@ -37,8 +37,8 @@ class FilmList:
         search_results = films[films['Genre'].str.contains(film_genre)]
         return search_results
 
-    def get_by_film_index(self, film_index: int):
-        return self.film_data[self.film_data['Original Index'] == film_index]
+    def get_by_films_index(self, film_indices: list):
+        return self.film_data[self.film_data['Original Index'].isin(film_indices)]
 
     def sort_by(self, column: str, ascending=True, film_data=None):
         if film_data is None:
@@ -102,15 +102,3 @@ class FilmList:
             films = films[films['Rating'] <= rating_to]
 
         return films
-
-
-if __name__ == '__main__':
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', None)
-    pd.set_option('display.max_colwidth', None)
-    film_list = FilmList()
-    print(film_list.film_data.info())
-    filtered = film_list.filter_by()
-    print(filtered)
-

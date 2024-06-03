@@ -31,6 +31,7 @@ class FilmExplorerApp:
         self.username_var = tk.StringVar()
         self.username_entry = ttk.Entry(self.login_frame, textvariable=self.username_var, width=30)
         self.username_entry.pack(side=tk.TOP, padx=5, pady=5)
+        self.username_entry.bind("<Return>", self.login)
 
         login_button = ttk.Button(self.login_frame, text="Login", command=self.login, width=20)
         login_button.pack(side=tk.TOP, padx=5, pady=5, anchor=tk.CENTER)
@@ -40,7 +41,7 @@ class FilmExplorerApp:
                                      width=20)
         add_user_button.pack(side=tk.TOP, padx=5, pady=5, anchor=tk.CENTER)
 
-    def login(self, as_new_user=False):
+    def login(self, event=None, as_new_user=False):
         self.username = self.username_var.get()
 
         if as_new_user:
@@ -55,11 +56,13 @@ class FilmExplorerApp:
                                  "User does not exist. Try another username or login as new user")
             return
 
-        self.list_to_watch, self.list_watched = self.user_handler.get_user_lists(self.username)
+        list_to_watch, list_watched = self.user_handler.get_user_lists(self.username)
+        self.list_to_watch = self.film_list.get_by_films_index(list_to_watch)
+        self.list_watched = self.film_list.get_by_films_index(list_watched)
 
         messagebox.showinfo("Login", "Login Successful")
         self.create_widgets()
-        self.show_data()
+        self.show_data(self.current_tree())
 
     def create_widgets(self):
         self.login_frame.destroy()
@@ -187,7 +190,7 @@ class FilmExplorerApp:
         self.notebook.add(frame_all_films, text="Films")
         self.notebook.add(frame_to_watch, text="To Watch")
         self.notebook.add(frame_watched, text="Watched")
-        self.notebook.bind('<<NotebookTabChanged>>', self.show_data)
+        self.notebook.bind('<<NotebookTabChanged>>', self.tab_changed)
 
         self.notebook.pack(expand=True, fill=tk.BOTH)
 
@@ -200,11 +203,11 @@ class FilmExplorerApp:
         self.tree_to_watch = ttk.Treeview(frame_to_watch, columns=head_columns, show='headings')
         self.tree_watched = ttk.Treeview(frame_watched, columns=head_columns, show='headings')
 
-        self.create_film_tree(frame_all_films, tree=self.tree_all)
-        self.create_film_tree(frame_to_watch, tree=self.tree_to_watch)
-        self.create_film_tree(frame_watched, tree=self.tree_watched)
+        self.create_film_tree(tree=self.tree_all)
+        self.create_film_tree(tree=self.tree_to_watch)
+        self.create_film_tree(tree=self.tree_watched)
 
-    def create_film_tree(self, tree_root, tree):
+    def create_film_tree(self, tree):
 
         tree.heading('Original Index', text='No.', command=lambda: self.sort_by_heading('Original Index', tree))
         tree.column('Original Index', width=25, anchor=tk.CENTER)
@@ -235,6 +238,30 @@ class FilmExplorerApp:
 
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         tree.pack(expand=True, fill=tk.BOTH)
+
+    def current_tree(self):
+        match self.notebook.index(self.notebook.select()):
+            case 0:
+                return self.tree_all
+            case 1:
+                return self.tree_to_watch
+            case 2:
+                return self.tree_watched
+
+    def update_current_lists(self):
+        match self.notebook.index(self.notebook.select()):
+            case 0:
+                self.filtered_list = self.film_list.film_data.copy()
+            case 1:
+                user_list, _ = self.user_handler.get_user_lists(self.username)
+                self.filtered_list = self.film_list.get_by_films_index(user_list)
+            case 2:
+                _, user_list = self.user_handler.get_user_lists(self.username)
+                self.filtered_list = self.film_list.get_by_films_index(user_list)
+
+    def tab_changed(self, event=None):
+        self.update_current_lists()
+        self.filter()
 
     def sort_by_heading(self, column, tree, event=None):
         for item in tree.get_children():
@@ -332,7 +359,8 @@ class FilmExplorerApp:
             self.filtered_list = self.film_list.filter_by(date_from=date_from, date_to=date_to,
                                                           runtime_from=runtime_from, runtime_to=runtime_to,
                                                           rating_from=rating_from, rating_to=rating_to,
-                                                          film_type=film_type, language=language)
+                                                          film_type=film_type, language=language,
+                                                          films=self.filtered_list)
         except ValueError as e:
             messagebox.showerror('Incorrect filters', f'Incorrect filters applied\n{e}')
             return
@@ -340,7 +368,7 @@ class FilmExplorerApp:
         self.search()
 
     def reset_filters(self, event=None):
-        self.filtered_list = self.film_list.film_data.copy()
+        self.update_current_lists()
         self.date_from.delete(0, tk.END)
         self.date_to.delete(0, tk.END)
         self.runtime_from.delete(0, tk.END)
@@ -357,16 +385,9 @@ class FilmExplorerApp:
         self.show_data()
 
     def show_data(self, event=None, films=None):
-        match self.notebook.index(self.notebook.select()):
-            case 0:
-                tree = self.tree_all
-            case 1:
-                tree = self.tree_to_watch
-            case 2:
-                tree = self.tree_watched
-
+        tree = self.current_tree()
         for item in tree.get_children():
-            self.tree_all.delete(item)
+            tree.delete(item)
 
         if films is None:
             films = self.filtered_list.copy()

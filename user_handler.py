@@ -121,17 +121,3 @@ class UserHandler:
                 return
 
         print(f'User {username} does not exist')
-
-
-if __name__ == '__main__':
-    user_handler = UserHandler()
-    user_handler.add_user('user1')
-    user_handler.add_user('user2')
-    user_handler.add_user('user3')
-
-    user_handler.add_to_watch('user1', 123)
-    user_handler.add_to_watch('user1', 222)
-    user_handler.add_to_watch('user1', 333)
-    user_handler.remove_to_watch('user1', 222)
-    user_handler.remove_to_watch('user1', 1)
-    # user_handler.remove_user('user3')
