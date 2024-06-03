@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
-
-import pandas as pd
+from datetime import datetime
 
 from data_scraper import convert_runtime
 
 import tkinter as tk
+from ttkthemes import ThemedTk
 from tkinter import ttk, messagebox
 from film_list import FilmList
 from user_handler import UserHandler
@@ -14,6 +13,8 @@ class FilmExplorerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Film Explorer")
+        icon = tk.PhotoImage(file="resources/film icon.png")
+        self.root.iconphoto(True, icon)
         self.root.geometry("300x200")
 
         self.film_list = FilmList()
@@ -64,19 +65,45 @@ class FilmExplorerApp:
         self.create_widgets()
         self.show_data(self.current_tree())
 
+    def logout(self, event=None):
+        result = messagebox.askyesno(title="Log Out", message="Are you sure you want to log out?")
+        if result:
+            self.root.geometry("300x200")
+            self.main_frame.destroy()
+            self.login_menu()
+
+    def delete_user(self, event=None):
+        result = messagebox.askyesno(title="Delete user", message="Are you sure you want to delete your account?")
+        if result:
+            self.user_handler.remove_user(self.username)
+            self.root.geometry("300x200")
+            self.main_frame.destroy()
+            self.login_menu()
+
     def create_widgets(self):
         self.login_frame.destroy()
         self.root.geometry("1500x800")
 
-        main_frame = ttk.Frame(self.root)
-        main_frame.pack(expand=True, fill=tk.BOTH)
+        self.main_frame = ttk.Frame(self.root)
+        self.main_frame.pack(expand=True, fill=tk.BOTH)
+
+        self.menubar = tk.Menu(self.main_frame)
+        self.user_menu = tk.Menu(self.menubar, tearoff=0)
+        self.user_menu.add_command(label="Log out", command=self.logout)
+        self.user_menu.add_command(label="Delete my account", command=self.delete_user)
+
+        self.menubar.add_cascade(label="My User", menu=self.user_menu)
+        self.root.config(menu=self.menubar)
+
+        ttk.Label(self.main_frame, text="FILM EXPLORER", font=('Verdana', 24, 'bold')).pack(padx=5, pady=5)
+        ttk.Separator(self.main_frame).pack(fill=tk.X, padx=5, pady=5)
 
         # all films frame
         # ------------------------------------------------------------------
         # ------------------------------------------------------------------
         # search
         # ------------------------------------------------------------------
-        search_frame = tk.Frame(main_frame)
+        search_frame = tk.Frame(self.main_frame)
         search_frame.pack(fill=tk.X)
 
         ttk.Label(search_frame, text="Search:", font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
@@ -85,7 +112,7 @@ class FilmExplorerApp:
         self.search_entry.pack(side=tk.TOP, padx=10, pady=5, fill=tk.X, expand=True)
         self.search_entry.bind("<KeyRelease>", self.search)
 
-        search_genre_frame = tk.Frame(main_frame)
+        search_genre_frame = tk.Frame(self.main_frame)
         search_genre_frame.pack(fill=tk.X)
 
         ttk.Label(search_genre_frame, text="Search by Genre:", font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
@@ -100,7 +127,7 @@ class FilmExplorerApp:
         # dates
         # ------------------------------------------------------------------
 
-        date_frame = tk.Frame(main_frame)
+        date_frame = tk.Frame(self.main_frame)
         date_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(date_frame, text="From Date").pack(side=tk.LEFT)
@@ -116,7 +143,7 @@ class FilmExplorerApp:
         # runtime
         # ------------------------------------------------------------------
 
-        runtime_frame = tk.Frame(main_frame)
+        runtime_frame = tk.Frame(self.main_frame)
         runtime_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(runtime_frame, text="From Runtime").pack(side=tk.LEFT)
@@ -132,7 +159,7 @@ class FilmExplorerApp:
         # rating
         # ------------------------------------------------------------------
 
-        rating_frame = tk.Frame(main_frame)
+        rating_frame = tk.Frame(self.main_frame)
         rating_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(rating_frame, text="From Rating").pack(side=tk.LEFT)
@@ -147,7 +174,7 @@ class FilmExplorerApp:
 
         # type, language
         # ------------------------------------------------------------------
-        filters_frame = ttk.Frame(main_frame)
+        filters_frame = ttk.Frame(self.main_frame)
         filters_frame.pack(fill='both', expand=False, padx=10, pady=10)
 
         ttk.Label(filters_frame, text="Film type").pack(side=tk.LEFT)
@@ -168,7 +195,7 @@ class FilmExplorerApp:
 
         # buttons
         # ------------------------------------------------------------------
-        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame = ttk.Frame(self.main_frame)
         buttons_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
 
         self.apply_filters_button = ttk.Button(buttons_frame, text="Apply", command=self.filter)
@@ -181,7 +208,7 @@ class FilmExplorerApp:
         # treeview
         # ------------------------------------------------------------------
 
-        self.notebook = ttk.Notebook(main_frame)
+        self.notebook = ttk.Notebook(self.main_frame)
 
         frame_all_films = ttk.Frame(self.notebook)
         frame_to_watch = ttk.Frame(self.notebook)
@@ -206,6 +233,65 @@ class FilmExplorerApp:
         self.create_film_tree(tree=self.tree_all)
         self.create_film_tree(tree=self.tree_to_watch)
         self.create_film_tree(tree=self.tree_watched)
+
+        self.create_context_menus()
+
+    def create_context_menus(self):
+        self.context_menu_all = tk.Menu(self.root, tearoff=0)
+        self.context_menu_all.add_command(label="Add to \"To Watch\"", command=lambda: self.operate_on_film_row(1))
+        self.context_menu_all.add_command(label="Add to \"Watched\"", command=lambda: self.operate_on_film_row(2))
+
+        self.context_menu_to_watch = tk.Menu(self.root, tearoff=0)
+        self.context_menu_to_watch.add_command(label="Remove", command=lambda: self.operate_on_film_row(3))
+        self.context_menu_to_watch.add_command(label="Move to \"Watched\"", command=lambda: self.operate_on_film_row(4))
+
+        self.context_menu_watched = tk.Menu(self.root, tearoff=0)
+        self.context_menu_watched.add_command(label="Remove", command=lambda: self.operate_on_film_row(5))
+        self.context_menu_watched.add_command(label="Move to \"To Watch\"", command=lambda: self.operate_on_film_row(6))
+
+        self.tree_all.bind("<Button-3>", self.show_context_menu)
+        self.tree_to_watch.bind("<Button-3>", self.show_context_menu)
+        self.tree_watched.bind("<Button-3>", self.show_context_menu)
+
+    def show_context_menu(self, event):
+        tree = self.current_tree()
+        iid = tree.identify_row(event.y)
+        if iid:
+            tree.selection_set(iid)
+            if tree == self.tree_all:
+                self.context_menu_all.post(event.x_root, event.y_root)
+            if tree == self.tree_to_watch:
+                self.context_menu_to_watch.post(event.x_root, event.y_root)
+            if tree == self.tree_watched:
+                self.context_menu_watched.post(event.x_root, event.y_root)
+
+    def operate_on_film_row(self, option, event=None):
+        tree = self.current_tree()
+        if tree.selection():
+            film_index = tree.item(tree.selection())['values'][0]
+            try:
+                match option:
+                    case 1:
+                        self.user_handler.add_to_watch(self.username, film_index)
+                    case 2:
+                        self.user_handler.add_watched(self.username, film_index)
+                    case 3:
+                        self.user_handler.remove_to_watch(self.username, film_index)
+                    case 4:
+                        self.user_handler.move_to_watched(self.username, film_index)
+                    case 5:
+                        self.user_handler.remove_watched(self.username, film_index)
+                    case 6:
+                        self.user_handler.move_to_towatch(self.username, film_index)
+
+                if option in range(3, 7):
+                    self.update_current_lists()
+                    self.filter()
+            except ValueError as e:
+                messagebox.showerror("Context Menu Error", str(e))
+            return
+
+        messagebox.showerror("Context Menu", "No films selected")
 
     def create_film_tree(self, tree):
 
@@ -402,6 +488,7 @@ class FilmExplorerApp:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    # root = tk.Tk()
+    root = ThemedTk(theme='breeze')
     app = FilmExplorerApp(root)
     root.mainloop()

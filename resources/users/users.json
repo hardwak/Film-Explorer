@@ -1,0 +1,33 @@
+[
+    {
+        "username": "user1",
+        "to_watch": [
+            5,
+            11,
+            10,
+            3
+        ],
+        "watched": [
+            617,
+            4,
+            21,
+            14,
+            26
+        ]
+    },
+    {
+        "username": "user2",
+        "to_watch": [],
+        "watched": []
+    },
+    {
+        "username": "user3",
+        "to_watch": [],
+        "watched": []
+    },
+    {
+        "username": "user4",
+        "to_watch": [],
+        "watched": []
+    }
+]

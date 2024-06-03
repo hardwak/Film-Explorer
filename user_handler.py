@@ -64,21 +64,23 @@ class UserHandler:
                 print(f'User {username} removed from users')
                 return
 
-        print(f'User {username} does not exist')
+        raise ValueError(f'User {username} does not exist')
 
     def add_to_watch(self, username: str, index: int):
         self.__is_valid_input(username, index)
 
         for user in self.users:
             if user['username'] == username:
-                if index not in user['to_watch']:
+                if index not in user['to_watch'] and index not in user['watched']:
                     user['to_watch'].append(index)
                     self.save_users()
+                elif index in user['to_watch']:
+                    raise ValueError(f'Film already added to \'To Watch\'')
                 else:
-                    print(f'Film index {index} already added')
+                    raise ValueError(f'Film already added to \'Watched\'')
                 return
 
-        print(f'User {username} does not exist')
+        raise ValueError(f'User {username} does not exist')
 
     def remove_to_watch(self, username: str, index: int):
         self.__is_valid_input(username, index)
@@ -89,24 +91,26 @@ class UserHandler:
                     user['to_watch'].remove(index)
                     self.save_users()
                 else:
-                    print(f'Film index {index} not added')
+                    raise ValueError(f'Film index {index} not added to list')
                 return
 
-        print(f'User {username} does not exist')
+        raise ValueError(f'User {username} does not exist')
 
     def add_watched(self, username: str, index: int):
         self.__is_valid_input(username, index)
 
         for user in self.users:
             if user['username'] == username:
-                if index not in user['watched']:
+                if index not in user['watched'] and index not in user['to_watch']:
                     user['watched'].append(index)
                     self.save_users()
+                elif index in user['watched']:
+                    raise ValueError(f'Film already added to \'Watched\'')
                 else:
-                    print(f'Film index {index} already added')
+                    raise ValueError(f'Film already added to \'To Watch\'')
                 return
 
-        print(f'User {username} does not exist')
+        raise ValueError(f'User {username} does not exist')
 
     def remove_watched(self, username: str, index: int):
         self.__is_valid_input(username, index)
@@ -117,7 +121,41 @@ class UserHandler:
                     user['watched'].remove(index)
                     self.save_users()
                 else:
-                    print(f'Film index {index} not added')
+                    raise ValueError(f'Film index {index} not added to list')
                 return
 
-        print(f'User {username} does not exist')
+        raise ValueError(f'User {username} does not exist')
+
+    def move_to_watched(self, username: str, index: int):
+        self.__is_valid_input(username, index)
+
+        for user in self.users:
+            if user['username'] == username:
+                if index in user['to_watch'] and index not in user['watched']:
+                    user['to_watch'].remove(index)
+                    user['watched'].append(index)
+                    self.save_users()
+                elif index not in user['to_watch']:
+                    raise ValueError(f'Film index {index} not added to list')
+                elif index in user['watched']:
+                    raise ValueError(f'Film index {index} already added to \"Watched\"')
+                return
+
+        raise ValueError(f'User {username} does not exist')
+
+    def move_to_towatch(self, username: str, index: int):
+        self.__is_valid_input(username, index)
+
+        for user in self.users:
+            if user['username'] == username:
+                if index in user['watched'] and index not in user['to_watch']:
+                    user['watched'].remove(index)
+                    user['to_watch'].append(index)
+                    self.save_users()
+                elif index not in user['to_watch']:
+                    raise ValueError(f'Film index {index} not added to list')
+                elif index in user['watched']:
+                    raise ValueError(f'Film index {index} already added to \"Watched\"')
+                return
+
+        raise ValueError(f'User {username} does not exist')
