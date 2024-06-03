@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../JezykiSkryptowe_Lab/.idea/JezykiSkryptowe_Lab.iml" filepath="$PROJECT_DIR$/../JezykiSkryptowe_Lab/.idea/JezykiSkryptowe_Lab.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/film_explorer.iml" filepath="$PROJECT_DIR$/.idea/film_explorer.iml" />
     </modules>
   </component>

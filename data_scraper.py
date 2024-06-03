@@ -56,7 +56,7 @@ def get_film_data():
         print("Reading films data...")
         film_data = pd.read_csv('resources/data_scraper/full_film_data.csv')
         film_data['Release date'] = pd.to_datetime(film_data['Release date'], format='%Y-%m-%d')
-        film_data['Runtime'] = film_data['Runtime'].apply(lambda time: timedelta(hours=int(time[-8:-6]), minutes=int(time[-5:-3])))
+        film_data['Runtime'] = film_data['Runtime'].apply(convert_runtime)
         return film_data
 
 

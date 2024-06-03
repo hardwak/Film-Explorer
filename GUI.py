@@ -14,52 +14,81 @@ class FilmExplorerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Film Explorer")
-        self.root.geometry("1500x800")
+        self.root.geometry("300x200")
 
         self.film_list = FilmList()
         self.filtered_list = self.film_list.film_data.copy()
-        self.user_handler = UserHandler()
 
+        self.user_handler = UserHandler()
+        self.login_menu()
+
+    def login_menu(self):
+        self.login_frame = ttk.Frame(self.root)
+        self.login_frame.pack(expand=True, fill=tk.BOTH)
+
+        ttk.Label(self.login_frame, text="Enter your username", font=('Arial', 12, 'bold')).pack(side=tk.TOP, padx=5,
+                                                                                                 pady=5)
+        self.username_var = tk.StringVar()
+        self.username_entry = ttk.Entry(self.login_frame, textvariable=self.username_var, width=30)
+        self.username_entry.pack(side=tk.TOP, padx=5, pady=5)
+
+        login_button = ttk.Button(self.login_frame, text="Login", command=self.login, width=20)
+        login_button.pack(side=tk.TOP, padx=5, pady=5, anchor=tk.CENTER)
+
+        add_user_button = ttk.Button(self.login_frame, text="Login as new user",
+                                     command=lambda: self.login(as_new_user=True),
+                                     width=20)
+        add_user_button.pack(side=tk.TOP, padx=5, pady=5, anchor=tk.CENTER)
+
+    def login(self, as_new_user=False):
+        self.username = self.username_var.get()
+
+        if as_new_user:
+            try:
+                self.user_handler.add_user(self.username)
+                messagebox.showinfo("User added", f"New user {self.username} added")
+            except ValueError as e:
+                messagebox.showerror("Username error", f'Username is incorrect.\n{e}')
+                return
+        elif not self.user_handler.exists(self.username):
+            messagebox.showerror("User does not exist",
+                                 "User does not exist. Try another username or login as new user")
+            return
+
+        self.list_to_watch, self.list_watched = self.user_handler.get_user_lists(self.username)
+
+        messagebox.showinfo("Login", "Login Successful")
         self.create_widgets()
-        self.load_data()
+        self.show_data()
 
     def create_widgets(self):
-        # notebook = ttk.Notebook(self.root)
+        self.login_frame.destroy()
+        self.root.geometry("1500x800")
 
-        frame_all = ttk.Frame(self.root)
-        frame_all.pack(expand=True, fill=tk.BOTH)
-        # frame_to_watch = ttk.Frame(notebook)
-        # frame_watched = ttk.Frame(notebook)
-        #
-        # notebook.add(frame_all, text="Films")
-        # notebook.add(frame_to_watch, text="To Watch")
-        # notebook.add(frame_watched, text="Watched")
-        #
-        # notebook.pack(expand=True, fill=tk.BOTH)
-
-        # ------------------------------------------------------------------
+        main_frame = ttk.Frame(self.root)
+        main_frame.pack(expand=True, fill=tk.BOTH)
 
         # all films frame
         # ------------------------------------------------------------------
         # ------------------------------------------------------------------
         # search
         # ------------------------------------------------------------------
-        search_frame = tk.Frame(frame_all)
+        search_frame = tk.Frame(main_frame)
         search_frame.pack(fill=tk.X)
 
         ttk.Label(search_frame, text="Search:", font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
         self.search_var = tk.StringVar()
         self.search_entry = tk.Entry(search_frame, textvariable=self.search_var)
-        self.search_entry.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X, expand=True)
+        self.search_entry.pack(side=tk.TOP, padx=10, pady=5, fill=tk.X, expand=True)
         self.search_entry.bind("<KeyRelease>", self.search)
 
-        search_genre_frame = tk.Frame(frame_all)
+        search_genre_frame = tk.Frame(main_frame)
         search_genre_frame.pack(fill=tk.X)
 
         ttk.Label(search_genre_frame, text="Search by Genre:", font=('Arial', 10, 'bold')).pack(side=tk.LEFT)
         self.genre_var = tk.StringVar()
         self.genre_entry = tk.Entry(search_genre_frame, textvariable=self.genre_var)
-        self.genre_entry.pack(side=tk.BOTTOM, padx=10, pady=10, fill=tk.X, expand=True)
+        self.genre_entry.pack(side=tk.BOTTOM, padx=10, pady=5, fill=tk.X, expand=True)
         self.genre_entry.bind("<KeyRelease>", self.search)
 
         # ------------------------------------------------------------------
@@ -68,7 +97,7 @@ class FilmExplorerApp:
         # dates
         # ------------------------------------------------------------------
 
-        date_frame = tk.Frame(frame_all)
+        date_frame = tk.Frame(main_frame)
         date_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(date_frame, text="From Date").pack(side=tk.LEFT)
@@ -84,7 +113,7 @@ class FilmExplorerApp:
         # runtime
         # ------------------------------------------------------------------
 
-        runtime_frame = tk.Frame(frame_all)
+        runtime_frame = tk.Frame(main_frame)
         runtime_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(runtime_frame, text="From Runtime").pack(side=tk.LEFT)
@@ -100,7 +129,7 @@ class FilmExplorerApp:
         # rating
         # ------------------------------------------------------------------
 
-        rating_frame = tk.Frame(frame_all)
+        rating_frame = tk.Frame(main_frame)
         rating_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(rating_frame, text="From Rating").pack(side=tk.LEFT)
@@ -115,7 +144,7 @@ class FilmExplorerApp:
 
         # type, language
         # ------------------------------------------------------------------
-        filters_frame = ttk.Frame(frame_all)
+        filters_frame = ttk.Frame(main_frame)
         filters_frame.pack(fill='both', expand=False, padx=10, pady=10)
 
         ttk.Label(filters_frame, text="Film type").pack(side=tk.LEFT)
@@ -136,7 +165,7 @@ class FilmExplorerApp:
 
         # buttons
         # ------------------------------------------------------------------
-        buttons_frame = ttk.Frame(frame_all)
+        buttons_frame = ttk.Frame(main_frame)
         buttons_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
 
         self.apply_filters_button = ttk.Button(buttons_frame, text="Apply", command=self.filter)
@@ -149,44 +178,67 @@ class FilmExplorerApp:
         # treeview
         # ------------------------------------------------------------------
 
-        head_columns = ('Original Index', 'Release date', 'Title', 'Genre', 'Runtime', 'Language', 'Type', 'Rating')
+        self.notebook = ttk.Notebook(main_frame)
+
+        frame_all_films = ttk.Frame(self.notebook)
+        frame_to_watch = ttk.Frame(self.notebook)
+        frame_watched = ttk.Frame(self.notebook)
+
+        self.notebook.add(frame_all_films, text="Films")
+        self.notebook.add(frame_to_watch, text="To Watch")
+        self.notebook.add(frame_watched, text="Watched")
+        self.notebook.bind('<<NotebookTabChanged>>', self.show_data)
+
+        self.notebook.pack(expand=True, fill=tk.BOTH)
+
         self.prev_sorted_column = 'Release date'
         self.is_ascending_sorting = True
 
-        self.tree_all = ttk.Treeview(frame_all, columns=head_columns, show='headings')
-        self.tree_all.heading('Original Index', text='No.', command=lambda: self.sort_by_heading('Original Index'))
-        self.tree_all.column('Original Index', width=25, anchor=tk.CENTER)
+        head_columns = ('Original Index', 'Release date', 'Title', 'Genre', 'Runtime', 'Language', 'Type', 'Rating')
 
-        self.tree_all.heading('Release date', text='Release date', command=lambda: self.sort_by_heading('Release date'))
-        self.tree_all.column('Release date', width=60, anchor=tk.CENTER)
+        self.tree_all = ttk.Treeview(frame_all_films, columns=head_columns, show='headings')
+        self.tree_to_watch = ttk.Treeview(frame_to_watch, columns=head_columns, show='headings')
+        self.tree_watched = ttk.Treeview(frame_watched, columns=head_columns, show='headings')
 
-        self.tree_all.heading('Title', text='Title', command=lambda: self.sort_by_heading('Title'))
-        self.tree_all.column('Title', width=300)
+        self.create_film_tree(frame_all_films, tree=self.tree_all)
+        self.create_film_tree(frame_to_watch, tree=self.tree_to_watch)
+        self.create_film_tree(frame_watched, tree=self.tree_watched)
 
-        self.tree_all.heading('Genre', text='Genre', command=lambda: self.sort_by_heading('Genre'))
-        self.tree_all.column('Genre', width=120)
+    def create_film_tree(self, tree_root, tree):
 
-        self.tree_all.heading('Runtime', text='Runtime', command=lambda: self.sort_by_heading('Runtime'))
-        self.tree_all.column('Runtime', width=40)
+        tree.heading('Original Index', text='No.', command=lambda: self.sort_by_heading('Original Index', tree))
+        tree.column('Original Index', width=25, anchor=tk.CENTER)
 
-        self.tree_all.heading('Language', text='Language', command=lambda: self.sort_by_heading('Language'))
-        self.tree_all.column('Language', width=80)
+        tree.heading('Release date', text='Release date', command=lambda: self.sort_by_heading('Release date', tree))
+        tree.column('Release date', width=60, anchor=tk.CENTER)
 
-        self.tree_all.heading('Type', text='Type', command=lambda: self.sort_by_heading('Type'))
-        self.tree_all.column('Type', width=80)
+        tree.heading('Title', text='Title', command=lambda: self.sort_by_heading('Title', tree))
+        tree.column('Title', width=300)
 
-        self.tree_all.heading('Rating', text='Rating', command=lambda: self.sort_by_heading('Rating'))
-        self.tree_all.column('Rating', width=25, anchor=tk.CENTER)
+        tree.heading('Genre', text='Genre', command=lambda: self.sort_by_heading('Genre', tree))
+        tree.column('Genre', width=120)
 
-        self.scrollbar = ttk.Scrollbar(frame_all, orient=tk.VERTICAL, command=self.tree_all.yview)
-        self.tree_all.configure(yscroll=self.scrollbar.set)
+        tree.heading('Runtime', text='Runtime', command=lambda: self.sort_by_heading('Runtime', tree))
+        tree.column('Runtime', width=40)
 
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.tree_all.pack(expand=True, fill=tk.BOTH)
+        tree.heading('Language', text='Language', command=lambda: self.sort_by_heading('Language', tree))
+        tree.column('Language', width=80)
 
-    def sort_by_heading(self, column, event=None):
-        for item in self.tree_all.get_children():
-            self.tree_all.delete(item)
+        tree.heading('Type', text='Type', command=lambda: self.sort_by_heading('Type', tree))
+        tree.column('Type', width=80)
+
+        tree.heading('Rating', text='Rating', command=lambda: self.sort_by_heading('Rating', tree))
+        tree.column('Rating', width=25, anchor=tk.CENTER)
+
+        scrollbar = ttk.Scrollbar(tree, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.pack(expand=True, fill=tk.BOTH)
+
+    def sort_by_heading(self, column, tree, event=None):
+        for item in tree.get_children():
+            tree.delete(item)
 
         if column == self.prev_sorted_column:
             self.is_ascending_sorting = not self.is_ascending_sorting
@@ -195,9 +247,10 @@ class FilmExplorerApp:
 
         self.prev_sorted_column = column
 
-        self.tree_all.heading(column)
-        self.filtered_list = self.film_list.sort_by(column, ascending=self.is_ascending_sorting, film_data=self.filtered_list)
-        self.load_data()
+        tree.heading(column)
+        self.filtered_list = self.film_list.sort_by(column, ascending=self.is_ascending_sorting,
+                                                    film_data=self.filtered_list)
+        self.show_data()
 
     def search(self, event=None):
         query_title = self.search_var.get()
@@ -215,7 +268,7 @@ class FilmExplorerApp:
             list_to_show = self.film_list.search_genre(query_genre, films=list_to_show)
 
         if searched:
-            self.load_data(films=list_to_show)
+            self.show_data(films=list_to_show)
 
     def filter(self, event=None):
         try:
@@ -275,12 +328,16 @@ class FilmExplorerApp:
         film_type = self.films_types.get()
         language = self.language_types.get()
 
-        self.filtered_list = self.film_list.filter_by(date_from=date_from, date_to=date_to,
-                                                      runtime_from=runtime_from, runtime_to=runtime_to,
-                                                      rating_from=rating_from, rating_to=rating_to,
-                                                      film_type=film_type, language=language)
+        try:
+            self.filtered_list = self.film_list.filter_by(date_from=date_from, date_to=date_to,
+                                                          runtime_from=runtime_from, runtime_to=runtime_to,
+                                                          rating_from=rating_from, rating_to=rating_to,
+                                                          film_type=film_type, language=language)
+        except ValueError as e:
+            messagebox.showerror('Incorrect filters', f'Incorrect filters applied\n{e}')
+            return
 
-        self.load_data()
+        self.search()
 
     def reset_filters(self, event=None):
         self.filtered_list = self.film_list.film_data.copy()
@@ -297,10 +354,18 @@ class FilmExplorerApp:
         self.prev_sorted_column = 'Release date'
         self.is_ascending_sorting = True
 
-        self.load_data()
+        self.show_data()
 
-    def load_data(self, films=None):
-        for item in self.tree_all.get_children():
+    def show_data(self, event=None, films=None):
+        match self.notebook.index(self.notebook.select()):
+            case 0:
+                tree = self.tree_all
+            case 1:
+                tree = self.tree_to_watch
+            case 2:
+                tree = self.tree_watched
+
+        for item in tree.get_children():
             self.tree_all.delete(item)
 
         if films is None:
@@ -310,9 +375,9 @@ class FilmExplorerApp:
         films['Runtime'] = films['Runtime'].apply(lambda td: f'{td.seconds // 3600} h {td.seconds // 60 % 60} min')
 
         for _, row in films.iterrows():
-            self.tree_all.insert('', 'end', values=(row['Original Index'], row['Release date'],
-                                                    row['Title'], row['Genre'], row['Runtime'], row['Language'],
-                                                    row['Type'], row['Rating']))
+            tree.insert('', 'end', values=(row['Original Index'], row['Release date'],
+                                           row['Title'], row['Genre'], row['Runtime'], row['Language'],
+                                           row['Type'], row['Rating']))
 
 
 if __name__ == "__main__":

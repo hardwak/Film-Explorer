@@ -4,13 +4,20 @@ import json
 
 class UserHandler:
     def __init__(self):
-        if not os.path.exists('resources/users/users.json'):
-            users = []
-            with open('resources/users/users.json', 'w') as file:
-                json.dump(users, file)
+        self.filepath = 'resources/users/users.json'
+        if not os.path.exists(self.filepath):
+            self.users = []
+            self.save_users()
 
-        with open('resources/users/users.json', 'r') as file:
-            self.users = json.load(file)
+        self.users = self.load_users()
+
+    def load_users(self):
+        with open(self.filepath, 'r') as file:
+            return json.load(file)
+
+    def save_users(self):
+        with open(self.filepath, 'w') as file:
+            json.dump(self.users, file, indent=4)
 
     def exists(self, username: str):
         for user in self.users:
@@ -18,6 +25,14 @@ class UserHandler:
                 return True
 
         return False
+
+    def get_user_lists(self, username: str):
+        if not self.exists(username):
+            raise ValueError(f'User {username} does not exist')
+
+        for user in self.users:
+            if username == user['username']:
+                return user['to_watch'], user['watched']
 
     @staticmethod
     def __is_valid_input(username: str, index: int):
@@ -29,17 +44,14 @@ class UserHandler:
     def add_user(self, username: str):
         self.__is_valid_input(username, 0)
 
-        for user in self.users:
-            if username in user['username']:
-                print(f'User {username} already exist')
-                return
+        if self.exists(username):
+            raise ValueError(f'User {username} already exist')
 
         user_data = {'username': username,
                      'to_watch': [],
                      'watched': []}
         self.users.append(user_data)
-        with open('resources/users/users.json', 'w') as file:
-            json.dump(self.users, file)
+        self.save_users()
         print(f'User {username} added to users')
 
     def remove_user(self, username: str):
@@ -48,8 +60,7 @@ class UserHandler:
         for user in self.users:
             if user['username'] == username:
                 self.users.remove(user)
-                with open('resources/users/users.json', 'w') as file:
-                    json.dump(self.users, file)
+                self.save_users()
                 print(f'User {username} removed from users')
                 return
 
@@ -62,8 +73,7 @@ class UserHandler:
             if user['username'] == username:
                 if index not in user['to_watch']:
                     user['to_watch'].append(index)
-                    with open('resources/users/users.json', 'w') as file:
-                        json.dump(self.users, file)
+                    self.save_users()
                 else:
                     print(f'Film index {index} already added')
                 return
@@ -77,8 +87,7 @@ class UserHandler:
             if user['username'] == username:
                 if index in user['to_watch']:
                     user['to_watch'].remove(index)
-                    with open('resources/users/users.json', 'w') as file:
-                        json.dump(self.users, file)
+                    self.save_users()
                 else:
                     print(f'Film index {index} not added')
                 return
@@ -92,8 +101,7 @@ class UserHandler:
             if user['username'] == username:
                 if index not in user['watched']:
                     user['watched'].append(index)
-                    with open('resources/users/users.json', 'w') as file:
-                        json.dump(self.users, file)
+                    self.save_users()
                 else:
                     print(f'Film index {index} already added')
                 return
@@ -107,8 +115,7 @@ class UserHandler:
             if user['username'] == username:
                 if index in user['watched']:
                     user['watched'].remove(index)
-                    with open('resources/users/users.json', 'w') as file:
-                        json.dump(self.users, file)
+                    self.save_users()
                 else:
                     print(f'Film index {index} not added')
                 return

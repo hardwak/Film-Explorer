@@ -48,7 +48,7 @@ class FilmList:
         if column not in valid_columns:
             raise ValueError(f'The column {column} does not exist')
 
-        films = film_data.sort_values(by=column, ascending=ascending, na_position='first' if ascending else 'last')
+        films = film_data.sort_values(by=column, ascending=ascending, na_position='last', kind='stable')
         return films
 
     def filter_by(self,
