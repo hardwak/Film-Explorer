@@ -35,19 +35,36 @@ class UserHandler:
                 return user['to_watch'], user['watched']
 
     @staticmethod
-    def __is_valid_input(username: str, index: int):
-        if len(username) <= 4:
+    def __is_valid_input(username: str, index: int, password=None):
+        if len(username) < 4:
             raise ValueError(f'Username is too short. Minimum 4 characters allowed')
+        if len(username) > 32:
+            raise ValueError(f'Username is too long. Maximum 32 characters allowed')
         if index < 0:
             raise ValueError(f'Index can\'t be negative')
+        if password and len(password) < 4:
+            raise ValueError(f'Password is too short. Minimum 4 characters allowed')
+        if password and len(password) > 32:
+            raise ValueError(f'Password is too long. Maximum 32 characters allowed')
 
-    def add_user(self, username: str):
-        self.__is_valid_input(username, 0)
+    def is_correct_password(self, username: str, password: str):
+        self.__is_valid_input(username, 0, password)
+
+        if not self.exists(username):
+            raise ValueError(f'User {username} does not exist')
+
+        for user in self.users:
+            if username == user['username']:
+                return password == user['password']
+
+    def add_user(self, username: str, password: str):
+        self.__is_valid_input(username, 0, password)
 
         if self.exists(username):
             raise ValueError(f'User {username} already exist')
 
         user_data = {'username': username,
+                     'password': password,
                      'to_watch': [],
                      'watched': []}
         self.users.append(user_data)

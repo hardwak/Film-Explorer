@@ -14,8 +14,8 @@ class FilmExplorerApp:
         self.root = root
         self.root.title("Film Explorer")
         icon = tk.PhotoImage(file="resources/film icon.png")
-        self.root.iconphoto(True, icon)
-        self.root.geometry("300x200")
+        self.root.iconphoto(False, icon)
+        self.root.minsize(800, 500)
 
         self.film_list = FilmList()
         self.filtered_list = self.film_list.film_data.copy()
@@ -24,6 +24,10 @@ class FilmExplorerApp:
         self.login_menu()
 
     def login_menu(self):
+        self.root.geometry("800x500")
+        self.root.resizable(False, False)
+
+
         self.login_frame = ttk.Frame(self.root)
         self.login_frame.pack(expand=True, fill=tk.BOTH)
 
@@ -32,7 +36,14 @@ class FilmExplorerApp:
         self.username_var = tk.StringVar()
         self.username_entry = ttk.Entry(self.login_frame, textvariable=self.username_var, width=30)
         self.username_entry.pack(side=tk.TOP, padx=5, pady=5)
-        self.username_entry.bind("<Return>", self.login)
+
+        self.password_var = tk.StringVar()
+        self.password_entry = ttk.Entry(self.login_frame, textvariable=self.password_var, width=30, show="*")
+        self.password_entry.pack(side=tk.TOP, padx=5, pady=5)
+
+        self.username_entry.bind("<Return>", lambda event: self.password_entry.focus())
+        self.password_entry.bind('<Return>', self.login)
+
 
         login_button = ttk.Button(self.login_frame, text="Login", command=self.login, width=20)
         login_button.pack(side=tk.TOP, padx=5, pady=5, anchor=tk.CENTER)
@@ -47,14 +58,17 @@ class FilmExplorerApp:
 
         if as_new_user:
             try:
-                self.user_handler.add_user(self.username)
+                self.user_handler.add_user(self.username, self.password_var.get())
                 messagebox.showinfo("User added", f"New user {self.username} added")
             except ValueError as e:
-                messagebox.showerror("Username error", f'Username is incorrect.\n{e}')
+                messagebox.showerror("Username error", f'Username or password is incorrect.\n{e}')
                 return
         elif not self.user_handler.exists(self.username):
             messagebox.showerror("User does not exist",
                                  "User does not exist. Try another username or login as new user")
+            return
+        elif not self.user_handler.is_correct_password(self.username, self.password_var.get()):
+            messagebox.showerror("Wrong password", "Wrong password. Try again")
             return
 
         list_to_watch, list_watched = self.user_handler.get_user_lists(self.username)
@@ -68,7 +82,6 @@ class FilmExplorerApp:
     def logout(self, event=None):
         result = messagebox.askyesno(title="Log Out", message="Are you sure you want to log out?")
         if result:
-            self.root.geometry("300x200")
             self.main_frame.destroy()
             self.login_menu()
 
@@ -83,6 +96,7 @@ class FilmExplorerApp:
     def create_widgets(self):
         self.login_frame.destroy()
         self.root.geometry("1500x800")
+        self.root.resizable(True, True)
 
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack(expand=True, fill=tk.BOTH)
@@ -268,7 +282,7 @@ class FilmExplorerApp:
     def operate_on_film_row(self, option, event=None):
         tree = self.current_tree()
         if tree.selection():
-            film_index = tree.item(tree.selection())['values'][0]
+            film_index = int(tree.item(tree.selection()[0])['values'][0])
             try:
                 match option:
                     case 1:
@@ -488,7 +502,7 @@ class FilmExplorerApp:
 
 
 if __name__ == "__main__":
-    # root = tk.Tk()
-    root = ThemedTk(theme='breeze')
+    root = tk.Tk()
+    # root = ThemedTk(theme='breeze')
     app = FilmExplorerApp(root)
     root.mainloop()
