@@ -29,7 +29,7 @@ Film Explorer is a Python-based application that allows users to browse, search,
 
 ## File Structure
 
-- `GUI.py`: Contains the main application interface and logic.
+- `GUI.py`: Contains the main application interface.
 - `user_handler.py`: Manages user accounts and their film lists.
 - `data_scraper.py`: Scrapes and processes film data from external sources.
 - `film_list.py`: Handles film data and provides search and filter functionality.
